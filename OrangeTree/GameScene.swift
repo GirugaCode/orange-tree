@@ -8,11 +8,18 @@
 
 import SpriteKit
 
+
+
 class GameScene: SKScene {
+    
     var orangeTree: SKSpriteNode!
     var orange: Orange?
     var touchStart: CGPoint = .zero
     var shapeNode = SKShapeNode()
+    var boundary = SKNode()
+    var numOfLevels: UInt32 = 2
+    
+
     
     override func didMove(to view: SKView) {
         // Connect Game Objects
@@ -26,6 +33,18 @@ class GameScene: SKScene {
         
         // Set the contact delegate
         physicsWorld.contactDelegate = self
+        
+        // Set up the boundaries
+        boundary.physicsBody = SKPhysicsBody(edgeLoopFrom: CGRect(origin: .zero, size: size))
+        boundary.position = .zero
+        addChild(boundary)
+        
+        // Add the Sun to the scene
+        let sun = SKSpriteNode(imageNamed:"Sun")
+        sun.name = "sun"
+        sun.position.x = size.width - (sun.size.width * 0.75)
+        sun.position.y = size.height - (sun.size.height * 0.75)
+        addChild(sun)
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -43,6 +62,19 @@ class GameScene: SKScene {
             
             // Store the location of the touch
             touchStart = location
+        }
+        
+        // Check wheather the sun was tapped and change the level
+        for node in nodes(at: location) {
+            if node.name == "sun" {
+                let n = Int(arc4random() % numOfLevels + 1)
+                if let scene = GameScene.Load(level: n) {
+                    scene.scaleMode = .aspectFill
+                    if let view = view {
+                        view.presentScene(scene)
+                    }
+                }
+            }
         }
     }
     
@@ -67,8 +99,8 @@ class GameScene: SKScene {
         let location = touch.location(in: self)
         
         // Get the difference between the start and end point as a vector
-        let dx = touchStart.x - location.x
-        let dy = touchStart.y - location.y
+        let dx = (touchStart.x - location.x) * 0.5
+        let dy = (touchStart.y - location.y) * 0.5
         let vector = CGVector(dx: dx, dy: dy)
         
         // Set the Orange dynamic again and apply the vector as an impulse
@@ -100,4 +132,11 @@ extension GameScene: SKPhysicsContactDelegate {
     func removeSkull(node: SKNode) {
         node.removeFromParent()
     }
+    
+    // Class method to load .sks files
+    static func Load(level: Int) -> GameScene? {
+        return GameScene(fileNamed: "Level-\(level)")
+    }
+
 }
+
